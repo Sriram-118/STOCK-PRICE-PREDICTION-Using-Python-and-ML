@@ -1,0 +1,40 @@
+import yfinance as yfinance
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+TICKER = "AAPL"
+LOOKBACK = 60
+EPOCHS = 20
+BATCH = 32
+data = yfinance.download (TICKER, start="2018-01-01", end="2025-11-01")
+prices = data["Close").values.reshape(-1, 1)
+scaler = MinMaxScaler()
+scaled = scaler.fit_transform(prices)
+x, y = [], []
+for i in range(LOOKBACK, len(scaled)):
+X.append(scaled [i-LOOKBACK:i, 0])
+y.append(scaled[i, 0])
+X, y = np.array (X), np.array(y)
+split = int(0.8 * len(X))
+X_train, X_test = X[:split), X [split:]
+y_train, y_test = y[:split], y[split:]
+X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
+model = Sequential ([LSTM (64, input_shape=(LOOKBACK, 1)), Dense(1)])
+model.compile(optimizer="adam", loss="mse")
+model.fit(X_train, y_train, epochs=EPOCHS, batch_size=BATCH, verbose=1)
+pred_scaled = model.predict(X_test)
+pred = scaler.inverse_transform(pred_scaled)
+actual = scaler.inverse_transform(y_test.reshape(-1, 1))
+plt.figure(figsize=(12,5))
+plt.plot(actual, label="Actual Price")
+plt.plot(pred, label="Predicted Price")
+plt.title(f"{TICKER} Stock Price Prediction (LSTM)")
+plt.xlabel("Days")
+plt.ylabel("Price")
+plt.legend()
+plt.grid(True)
+plt.show()
